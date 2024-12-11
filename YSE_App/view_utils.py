@@ -1393,81 +1393,76 @@ def lightcurveplot_flux(request, transient_id, salt2=False):
 
 def spectrumplot(request, transient_id):
     tstart = time.time()
+    
+    # Fetch data with optimized queries
     transient = Transient.objects.get(pk=transient_id)
-    dbspectra = SpectraService.GetAuthorizedTransientSpectrum_ByUser_ByTransient(request.user, transient_id, includeBadData=True).select_related()
-    spectra = {}
-
-    if not len(dbspectra):
-        return django.http.HttpResponse('')
-
+    dbspectra = SpectraService.GetAuthorizedTransientSpectrum_ByUser_ByTransient(
+        request.user, transient_id, includeBadData=True
+    ).select_related('instrument').prefetch_related(
+        Prefetch('transientspecdata_set', queryset=TransientSpecData.objects.all())
+    )
     
-    dates = []
-    for i,spectrum in enumerate(dbspectra):
-        spec = TransientSpecData.objects.filter(spectrum=spectrum)
-
-        wave = list(spec.values_list('wavelength',flat=True))
-        flux = list(spec.values_list('flux',flat=True))
-
+    spectra = []
+    for spectrum in dbspectra:
+        spec_data = spectrum.transientspecdata_set.all()
+        wave = np.array([s.wavelength for s in spec_data])
+        flux = np.array([s.flux for s in spec_data])
         
-        flux = np.array(flux)[np.argsort(wave)]
-        wave = np.sort(wave)
-
-        wave2 = np.arange(np.min(wave),np.max(wave)+5,5)
-        flux = np.interp(wave2,wave,flux)
-        wave = wave2
+        # Vectorized sorting and interpolation
+        sort_idx = np.argsort(wave)
+        wave = wave[sort_idx]
+        flux = flux[sort_idx]
         
-        spec = Table([wave,flux],names=['wave','flux'])         
-        spectra[i] = spec
-        spectra[i].mjd = date_to_mjd(spectrum.obs_date.isoformat().split('+')[0])
-        n_pix = len(wave)
-        sort_flux = np.sort(flux)
+        wave_interp = np.arange(np.min(wave), np.max(wave) + 5, 5)
+        flux_interp = np.interp(wave_interp, wave, flux)
         
-        if len(flux):
-            minval = sort_flux[round(n_pix*0.05)]
-            maxval = sort_flux[round(n_pix*0.95)]
-            minval = minval*0.5
-            maxval = maxval*1.1
-            scale = maxval - minval
-            spectra[i].minval = minval
-            spectra[i].maxval = maxval
-            spectra[i].scale  = scale
-
-        dates.append(spectra[i].mjd)
-
-    dates = np.array(dates)
-    temp = np.argsort(-dates)
-    temp2 = np.argsort(dates)
-    offset = np.empty_like(temp)
-    offset[temp] = np.arange(len(dates))
-    ax=figure(plot_width=240,plot_height=240,sizing_mode='stretch_width',y_range=(-0.15, len(dbspectra)+0.15))
-
-
+        spectra.append({
+            'wave': wave_interp,
+            'flux': flux_interp,
+            'mjd': date_to_mjd(spectrum.obs_date.isoformat().split('+')[0]),
+        })
+    
+    # Process spectra and compute offsets
+    dates = np.array([spec['mjd'] for spec in spectra])
+    sorted_idx = np.argsort(-dates)
+    offsets = np.argsort(sorted_idx)
+    
+    # Prepare plot
+    ax = figure(plot_width=240, plot_height=240, sizing_mode='stretch_width', y_range=(-0.15, len(spectra) + 0.15))
     colors = itertools.cycle(palette)
-    legend_it = [None]*len(dbspectra)
-    for i,color in zip(range(len(dbspectra)),colors):
-        spectra[i].offset = offset[i]
-
-        if len(spectra[i]['flux']):
-            p = ax.line(spectra[i]['wave'], (spectra[i]['flux']-spectra[i].minval)/spectra[i].scale + spectra[i].offset,
-                        color=color,muted_alpha=0.2)
-
-        legend_it[np.where(temp2 == i)[0][0]] = ('%s - %s'%(dbspectra[i].instrument.name,dbspectra[i].obs_date.strftime('%Y-%m-%d')), [p])
+    legend_items = []
     
-    legend = Legend(items=legend_it, location="bottom_right")
-    legend.click_policy="mute"
-    legend.label_height = 1
-    legend.glyph_height = 20
-    ax.add_layout(legend) #, 'right')
-
-    ax.plot_height = 400+50*len(dbspectra)
+    for spec, color, offset in zip(spectra, colors, offsets):
+        flux = spec['flux']
+        n_pix = len(flux)
+        sort_flux = np.sort(flux)
+        minval = sort_flux[round(n_pix * 0.05)] * 0.5
+        maxval = sort_flux[round(n_pix * 0.95)] * 1.1
+        scale = maxval - minval
+        
+        # Normalize flux
+        norm_flux = (flux - minval) / scale + offset
+        
+        # Plot line
+        p = ax.line(spec['wave'], norm_flux, color=color, muted_alpha=0.2)
+        legend_items.append((f'{spectrum.instrument.name} - {spectrum.obs_date.strftime("%Y-%m-%d")}', [p]))
+    
+    # Add legend
+    legend = Legend(items=legend_items, location="bottom_right")
+    legend.click_policy = "mute"
+    ax.add_layout(legend)
+    
+    # Configure plot dimensions
+    ax.plot_height = 400 + 50 * len(spectra)
     ax.plot_width = 400
-    ax.x_range=Range1d(3000,10000)
-    
+    ax.x_range = Range1d(3000, 10000)
     ax.xaxis.axis_label = r'Wavelength (Angstrom)'
     ax.yaxis.axis_label = 'Flux'
-    g = file_html(ax,CDN,"spectrum plot")
-    time.sleep(5)
-    return HttpResponse(g.replace('width: 90%','width: 100%'))
+    
+    # Render plot
+    g = file_html(ax, CDN, "spectrum plot")
+    return HttpResponse(g.replace('width: 90%', 'width: 100%'))
+    
 
 def spectrumplot_summary(request, transient_id):
     tstart = time.time()
