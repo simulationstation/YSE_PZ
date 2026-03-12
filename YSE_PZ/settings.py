@@ -11,9 +11,9 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 import os
 from configparser import RawConfigParser
+from YSE_PZ.settings_utils import normalize_script_name, prefix_url_path, settings_file_path
 
-__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-configFile = os.path.join(__location__, 'settings.ini')
+configFile = settings_file_path(__file__)
 
 config = RawConfigParser()
 config.read(configFile)
@@ -202,7 +202,13 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-LOGIN_URL = config.get('virtual_directory', 'LOGIN_URL')
+URL_PREFIX = normalize_script_name(
+    config.get('virtual_directory', 'URL_PREFIX')
+    if config.has_option('virtual_directory', 'URL_PREFIX')
+    else ''
+)
+FORCE_SCRIPT_NAME = URL_PREFIX or None
+LOGIN_URL = prefix_url_path(URL_PREFIX, config.get('virtual_directory', 'LOGIN_URL'))
 
 SMTP_LOGIN = config.get('SMTP_provider', 'SMTP_LOGIN')
 SMTP_PASSWORD = config.get('SMTP_provider', 'SMTP_PASSWORD')
@@ -239,8 +245,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 PROJECT_DIR=os.path.dirname(__file__)
 STATIC_ROOT= os.path.join(PROJECT_DIR,'static/')
-STATIC_URL = config.get('site_settings', 'STATIC')
-MEDIA_URL = '/media/'
+STATIC_URL = prefix_url_path(URL_PREFIX, config.get('site_settings', 'STATIC'))
+MEDIA_URL = prefix_url_path(URL_PREFIX, '/media/')
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 ZTFTMPDIR = config.get('ztf','ztfforcedtmpdir')

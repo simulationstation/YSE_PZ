@@ -16,9 +16,9 @@ import os
 from django.core.wsgi import get_wsgi_application
 
 from configparser import RawConfigParser
+from YSE_PZ.settings_utils import settings_file_path
 
-__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-configFile = os.path.join(__location__, 'settings.ini')
+configFile = settings_file_path(__file__)
 
 config = RawConfigParser()
 config.read(configFile)

@@ -1,0 +1,20 @@
+WSGIDaemonProcess yse_pz python-home=/var/www/quasardipolephenomenon/venv python-path=/var/www/quasardipolephenomenon/YSE_PZ
+WSGIProcessGroup yse_pz
+WSGIScriptAlias /YSE_PZ /var/www/quasardipolephenomenon/YSE_PZ/YSE_PZ/wsgi.py
+
+Alias /YSE_PZ/static/ /var/www/quasardipolephenomenon/YSE_PZ/YSE_PZ/static/
+Alias /YSE_PZ/media/ /var/www/quasardipolephenomenon/YSE_PZ/media/
+
+<Directory /var/www/quasardipolephenomenon/YSE_PZ/YSE_PZ>
+    <Files wsgi.py>
+        Require all granted
+    </Files>
+</Directory>
+
+<Directory /var/www/quasardipolephenomenon/YSE_PZ/YSE_PZ/static>
+    Require all granted
+</Directory>
+
+<Directory /var/www/quasardipolephenomenon/YSE_PZ/media>
+    Require all granted
+</Directory>

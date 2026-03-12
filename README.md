@@ -8,6 +8,8 @@
 
 The modern study of astrophysical transients has been transformed by an exponentially growing volume of data. Within the last decade, the transient discovery rate has increased by a factor of ~20, with associated survey data, archival data, and metadata also increasing with the number of discoveries. To manage the data at this increased rate, we require new tools. Here we present YSE_PZ, a transient survey management platform that ingests multiple live streams of transient discovery alerts, identifies the host galaxies of those transients, downloads coincident archival data, and retrieves photometry and spectra from ongoing surveys. YSE_PZ also presents a user with a range of tools to make and support timely and informed transient follow-up decisions. Those subsequent observations enhance transient science and can reveal physics only accessible with rapid follow-up observations. Rather than automating out human interaction, YSE_PZ focuses on accelerating and enhancing human decision making, a role we describe as empowering the human-in-the-loop. Finally, YSE_PZ is built to be flexibly used and deployed; YSE_PZ can support multiple, simultaneous, and independent transient collaborations through group-level data permissions, allowing a user to view the data associated with the union of all groups in which they are a member. YSE_PZ can be used as a local instance installed via Docker or deployed as a service hosted in the cloud. We provide YSE_PZ as an open-source tool for the community.
 
+For Apache subpath deployments such as `/YSE_PZ`, set `URL_PREFIX = /YSE_PZ` in `YSE_PZ/settings.ini` and start from [`deploy/apache/yse_pz-subpath.conf.example`](deploy/apache/yse_pz-subpath.conf.example).
+
 ## Citation
 
 If you are using YSE_PZ in your research please cite the paper and Zenodo record
@@ -76,4 +78,3 @@ archivePrefix = {arXiv},
   url          = {https://doi.org/10.5281/zenodo.7278430}
 }
 ```
-
