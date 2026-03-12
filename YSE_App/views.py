@@ -91,7 +91,7 @@ def auth_login(request):
         if next_page:
             return HttpResponseRedirect(next_page)
         else:
-            return HttpResponseRedirect('/dashboard/')
+            return HttpResponseRedirect(reverse_lazy('dashboard'))
         #render(request,'YSE_App/dashboard.html')
     else:
         return render(request, 'YSE_App/login.html')
