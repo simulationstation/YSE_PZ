@@ -33,6 +33,16 @@ DEBUG = bool(config.get('site_settings', 'IS_DEBUG'))
 
 ALLOWED_HOSTS = ['*']
 
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS = [
+        'http://localhost:8080',
+        'http://127.0.0.1:8080',
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
+    ]
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
+
 
 # Application definitionEXPLORER_SQL_BLACKLIST
 
@@ -82,7 +92,7 @@ CRON_CLASSES = [
 	'YSE_App.data_ingest.TNS_uploads.TNS_recent',
 	'YSE_App.data_ingest.TNS_uploads.TNS_recent_realtime',
     'YSE_App.data_ingest.QUB_data.CheckDuplicates',
-    'YSE_App.data_ingest.PhotometryUploadExample.PhotometryUploads'
+    'YSE_App.data_ingest.PhotometryUploadExample.PhotometryUploads',
     'YSE_App.data_ingest.ZTF_Forced_Phot_Cron.ForcedPhot',
     'YSE_App.data_ingest.TNS_uploads.UpdateGHOST'
 ]
@@ -97,7 +107,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     #'django.middleware.cache.UpdateCacheMiddleware',
-    'django.middleware.common.CommonMiddleware',
     'auditlog.middleware.AuditlogMiddleware',
     #'django.middleware.cache.FetchFromCacheMiddleware'
 ]
@@ -245,6 +254,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 ZTFTMPDIR = config.get('ztf','ztfforcedtmpdir')
 
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
